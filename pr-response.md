@@ -63,6 +63,11 @@ For `.gitignore`, I merged both versions' entries into one file. For the dropped
 **How I verified no conflict remains:**
 I ran `git log --oneline --merges origin/main..HEAD` to confirm no merge commits exist in my branch history, and `grep -rn "film_id.*int" services/ routes/` to confirm no remaining integer-ID references. i also ran the full test suite (`pytest tests/ -v`) and confirmed all 8 tests pass against the rebased code.
 
+### Final Commit History
+
+![git log --oneline output showing conventional commits with no merge commits](docs/commit-history.png)
+
+
 ## PR Description
 
 **Feature overview**
