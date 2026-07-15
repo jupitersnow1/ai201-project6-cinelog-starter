@@ -2,6 +2,13 @@
 
 ## AI Usage
 <!-- Fill in at the end — how you used AI tools during this project -->
+I used Claude Code throughout this PR as a coding assistant to review my work, help troubleshoot issues, and explain Git behavior.
+
+- Diagnosing reviewer comments: For Comments 2 (deduplication) and 3 (missing tests), I compared my watchlist_service.py implementation against collection_service.py and used Claude Code to help verify what was actually missing before making the changes myself.
+
+- Stress-testing my reasoning (Comments 4 and 5): After writing my own responses on default visibility and sort order, I asked Claude Code to challenge my reasoning by pointing out potential counterarguments and tradeoffs a reviewer might raise. For Comment 4, this helped me realize there was no opt-out mechanism in the current implementation, which led me to change my position from keeping public=True to recommending public=False. For Comment 5, it helped me better explain why using a tiebreaker was a reasonable design choice.
+
+- Rebase debugging (Comment 6): After running git rebase origin/main myself, the rebase completed without any merge conflicts, but the WatchlistEntry model had been unintentionally dropped from models.py. I used Claude Code to help compare the files before and after the rebase, confirm what had happened, and explain the Git commands (git rebase -i, GIT_SEQUENCE_EDITOR) I used to reword an earlier commit without affecting the commit history.
 
 ## Comment 1 — Rename
 **What I did:**
