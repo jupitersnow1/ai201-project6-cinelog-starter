@@ -102,3 +102,37 @@ def test_add_to_watchlist_nonexistent_film_raises(app, sample_user):
         with pytest.raises(FilmNotFoundError):
             add_to_watchlist(user_id=sample_user, film_id=fake_film_id)
 
+
+# ── get_watchlist sort order ─────────────────────────────────────────────────
+
+def test_get_watchlist_sorts_by_date_added_desc_then_title(app, sample_user):
+    """
+    get_watchlist() should sort by date_added descending (most recent first),
+    using title as a tiebreaker when date_added is identical.
+    """
+    with app.app_context():
+        from datetime import datetime, timezone, timedelta
+
+        film_a = Film(title="Zodiac", year=2007, genre="Thriller")
+        film_b = Film(title="Amelie", year=2001, genre="Romance")
+        film_c = Film(title="Blade Runner", year=1982, genre="Sci-Fi")
+        db.session.add_all([film_a, film_b, film_c])
+        db.session.commit()
+
+        earlier = datetime.now(timezone.utc) - timedelta(days=5)
+        same_time = datetime.now(timezone.utc)
+
+        entry_a = WatchlistEntry(user_id=sample_user, film_id=film_a.id, date_added=earlier)
+        # b and c share the same date_added, so title should break the tie
+        entry_b = WatchlistEntry(user_id=sample_user, film_id=film_b.id, date_added=same_time)
+        entry_c = WatchlistEntry(user_id=sample_user, film_id=film_c.id, date_added=same_time)
+        db.session.add_all([entry_a, entry_b, entry_c])
+        db.session.commit()
+
+        watchlist = get_watchlist(sample_user)
+        titles = [f["title"] for f in watchlist]
+
+        # Amelie and Blade Runner (same date_added) come before Zodiac (older),
+        # and are alphabetically ordered between themselves.
+        assert titles == ["Amelie", "Blade Runner", "Zodiac"]
+
