@@ -31,8 +31,11 @@ Making the default False does make the social side of the app a little less seam
 
 ## Comment 5 — Sort order
 **My position:**
+Rather than switching `get_watchlist()` straight to `date_added.desc()` (matching `get_collection()`) or leaving it as alphabetical, I'd sort by `date_added.desc()` first and use `Film.title.asc()` as a tiebreaker.
 **Reasoning:**
+`date_added.desc()` alone isn't fully deterministic: if a user adds multiple films in the same request/batch, or the database's timestamp resolution isn't fine enough to distinguish near-simultaneous inserts, entries with an identical `date_added` can come back in an arbitrary order across queries. Adding `Film.title.asc()` as a secondary sort key guarantees a stable, repeatable order for ties without changing the primary ordering the maintainer wants.
 **Engagement with reviewer's point:**
+I agree with the maintainer's underlying argument: `get_watchlist()` sorting alphabetically while `get_collection()` sorts by recency is an inconsistency that makes the two nearly identical endpoints behave unpredictably differently, which is confusing for anyone consuming the API. My proposal keeps that consistency (recency is still the primary, user facing order) while closing a smaller correcness gap the pure `date_added.desc()` approach leaves open.
 
 ## Comment 6 — Rebase
 **What conflicted:**
