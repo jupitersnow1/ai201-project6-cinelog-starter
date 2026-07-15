@@ -39,8 +39,11 @@ I agree with the maintainer's underlying argument: `get_watchlist()` sorting alp
 
 ## Comment 6 — Rebase
 **What conflicted:**
+Running `git fetch origin` and `git rebase origin/main` paused with a conflict on `.gitignore` — both branches had independently added the file, `main`'s version additionally ignoring `.pytest_cache/`. Separately (without a git conflict marker, but a real breakage), the rebase's auto-merge silently dropped the entire `WatchlistEntry` class from `models.py`, since `main` had heavily rewritten the surrounding `Film` class as part of migrating `Film.id` from an integer primary key to a UUID (`db.String(36)`). That model class disappearing left `Film.watchlist_entries` referencing an undefined `WatchlistEntry`, and my `services/watchlist_service.py` and `routes/watchlist/watchlist.py` code still assumed `film_id` was an integer.
 **How I resolved it:**
+For `.gitignore`, I merged both versions' entries into one file. For the dropped model, I restored the `WatchlistEntry` class in `models.py`, updating `film_id` from `db.Integer` to `db.String(36)` to match the new UUID-based `Film.id`. I then updated the stale docstrings in `watchlist_service.py` and `routes/watchlist/watchlist.py` that still described `film_id` as an integer.
 **How I verified no conflict remains:**
+I ran `git log --oneline --merges origin/main..HEAD` to confirm no merge commits exist in my branch history, and `grep -rn "film_id.*int" services/ routes/` to confirm no remaining integer-ID references. i also ran the full test suite (`pytest tests/ -v`) and confirmed all 8 tests pass against the rebased code.
 
 ## PR Description
 <!-- Written at the end — feature overview, design decisions, manual testing steps -->
