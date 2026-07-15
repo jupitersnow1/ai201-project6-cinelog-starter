@@ -17,7 +17,9 @@ I added `tests/test_watchlist.py::test_add_to_watchlist_duplicate_raises`, which
 
 ## Comment 3 — Missing test
 **What I did:**
+`services/watchlist_service.py` had no test coverage at all, unlike `services/collection_service.py` (covered by `tests/test_collection.py`). I created `tests/test_watchlist.py`, mirroring the existing collection test suite's fixtures and structure, with the three cases CONTRIBUTING.md requires for a service function: a happy-path test (`test_add_to_watchlist_creates_entry`), a duplicate/conflict test (`test_add_to_watchlist_duplicate_raises`, covering the Comment 2 fix), and a nonexistent-ID test (`test_add_to_watchlist_nonexistent_film_raises`).
 **How I verified:**
+I ran `pytest tests/test_watchlist.py -v` and confirmed all 3 tests pass.
 
 ## Comment 4 — Default visibility
 **My position:**
