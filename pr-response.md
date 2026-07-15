@@ -23,8 +23,11 @@ I ran `pytest tests/test_watchlist.py -v` and confirmed all 3 tests pass.
 
 ## Comment 4 — Default visibility
 **My position:**
+I'd change the default to public=False (opt-in sharing) instead of keeping public=True.
 **Reasoning:**
+At first, I thought keeping public=True made sense because this flag controls whether a watchlist activity is visible, not the film itself, and discovering what others are watching is a big part of the app. After looking at it more closely, though, I don't think that's enough to justify making everything public by default. A user's watchlist can still reveal personal information, like political, religious, or recovery-related interests. On top of that, users don't currently have any way to opt out since add_film doesn't accept a public field. That means every new entry is automatically public without the user ever making that choice. I think it's better to follow a privacy-by-default approach where users can choose to share later instead of exposing their activity first.
 **Tradeoff acknowledged:**
+Making the default False does make the social side of the app a little less seamless since users won't automatically appear in activity feeds unless they choose to share. That could reduce engagement, but I think giving users control over their privacy is the better tradeoff, especially since there's no opt-out option right now.
 
 ## Comment 5 — Sort order
 **My position:**
