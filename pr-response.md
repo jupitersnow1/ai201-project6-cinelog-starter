@@ -101,4 +101,38 @@ You should get a 409 error saying the movie is already in the user's watchlist i
 
 6. Add a few different movies at different times, then call GET /watchlist/<user_id>. Verify the watchlist is ordered from newest to oldest, with alphabetical ordering for movies added at the same time.
 
-7. Run pytest tests/ -v. All 8 tests (4 collection and 4 watchlist) should pass.
+7. Run pytest tests/ -v. All 13 tests (4 collection and 9 watchlist) should pass.
+
+8. Send a DELETE /watchlist/<user_id>/remove request with { "film_id": "<film_uuid>" } for a film that's on the watchlist. You should get a 200 response, and the film should no longer appear in GET /watchlist/<user_id>.
+
+9. Send the same DELETE request again for the same film_id. You should get a 404 error saying the film isn't in the user's watchlist.
+
+10. Send a POST /watchlist/<user_id>/add request with { "film_id": "<film_uuid>", "public": true }. The returned entry should have "public": true. Omitting the "public" field should default the entry to "public": false.
+
+## Stretch Features
+
+### remove_from_watchlist()
+
+**What I did:**
+Added `remove_from_watchlist(user_id, film_id)` to `services/watchlist_service.py`, following the same pattern as `remove_from_collection()` in `services/collection_service.py`: look up the `WatchlistEntry` by `user_id`/`film_id`, raise a new `NotInWatchlistError` (mirroring `NotInCollectionError`) if it doesn't exist, otherwise delete it and return `True`. Wired it up as `DELETE /watchlist/<user_id>/remove` in `routes/watchlist/watchlist.py`, mirroring `DELETE /collection/<user_id>/remove` — same request body shape (`{ "film_id": "<uuid>" }`), same 404-on-missing-entry behavior, same 200 success response shape.
+
+**How I verified:**
+Added `tests/test_watchlist.py::test_remove_from_watchlist_deletes_entry` (removes an entry and confirms it's gone from the database) and `test_remove_from_watchlist_nonexistent_entry_raises` (confirms removing a film never added raises `NotInWatchlistError`). Ran the full suite and confirmed all tests pass.
+
+### Second test — cross-user isolation
+
+**What I did:**
+Added `test_get_watchlist_only_returns_requested_users_entries`, which creates two users who both add the same film to their watchlists, then asserts `get_watchlist()` returns exactly one entry for each user.
+
+**Why I chose this edge case:**
+`get_watchlist()`'s query filters by `user_id` before joining `Film`, but that filter is easy to accidentally drop in a future refactor (e.g. someone "simplifying" the query to `WatchlistEntry.query.join(Film).all()` while fixing something else). None of the existing tests would catch that regression, since they only ever use a single user. This test exists specifically to catch cross-user data leakage, which is a more severe bug class (privacy/security) than an ordering mistake.
+
+### Visibility toggle — public parameter
+
+**What I did:**
+Added a `public` parameter to `add_to_watchlist()` (default `False`) and to the `POST /watchlist/<user_id>/add` request body (optional, defaults to `False` via `data.get("public", False)`), so callers can now explicitly set an entry's visibility instead of always getting whatever `WatchlistEntry.public`'s column default happens to be.
+
+I also changed the *effective* default from `True` to `False` when the caller omits `public` — this directly implements the position I argued for in Comment 4 (privacy-by-default), now that the opt-out mechanism I said was missing actually exists. Note the model column default (`WatchlistEntry.public = db.Column(db.Boolean, default=True)`) is unchanged; I didn't want to touch a shared model default as a side effect of this stretch feature, so the `False` default lives in `add_to_watchlist()`'s function signature and is enforced any time the service function is called with `public` omitted. Any code path that inserts a `WatchlistEntry` directly (bypassing the service function) would still fall back to the column's `True` default — worth a follow-up if the maintainer wants the privacy-by-default behavior guaranteed at the model layer.
+
+**How I verified:**
+Added `test_add_to_watchlist_defaults_to_private` (omits `public`, asserts the entry is private) and `test_add_to_watchlist_respects_explicit_public_true` (passes `public=True`, asserts it's honored). Ran the full suite and confirmed all tests pass.
