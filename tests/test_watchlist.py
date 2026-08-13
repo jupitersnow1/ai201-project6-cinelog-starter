@@ -187,3 +187,28 @@ def test_add_to_watchlist_respects_explicit_public_true(app, sample_user, sample
         entry = add_to_watchlist(user_id=sample_user, film_id=sample_film, public=True)
         assert entry.public is True
 
+
+# ── edge case: entries across different users ────────────────────────────────
+
+def test_get_watchlist_only_returns_requested_users_entries(app, sample_film):
+    """
+    get_watchlist() should only return entries belonging to the requested
+    user, even when other users have entries for the same film. This guards
+    against a query that accidentally omits the user_id filter (e.g. a
+    regression to `WatchlistEntry.query.join(Film).all()`).
+    """
+    with app.app_context():
+        user_a = User(username="alice", email="alice@example.com")
+        user_b = User(username="bob", email="bob@example.com")
+        db.session.add_all([user_a, user_b])
+        db.session.commit()
+
+        add_to_watchlist(user_id=user_a.id, film_id=sample_film)
+        add_to_watchlist(user_id=user_b.id, film_id=sample_film)
+
+        watchlist_a = get_watchlist(user_a.id)
+        assert len(watchlist_a) == 1
+
+        watchlist_b = get_watchlist(user_b.id)
+        assert len(watchlist_b) == 1
+
