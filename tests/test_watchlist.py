@@ -9,8 +9,10 @@ from app import create_app, db
 from models import User, Film, WatchlistEntry
 from services.watchlist_service import (
     add_to_watchlist,
+    remove_from_watchlist,
     get_watchlist,
     AlreadyInWatchlistError,
+    NotInWatchlistError,
 )
 from services.collection_service import FilmNotFoundError
 
@@ -135,4 +137,32 @@ def test_get_watchlist_sorts_by_date_added_desc_then_title(app, sample_user):
         # Amelie and Blade Runner (same date_added) come before Zodiac (older),
         # and are alphabetically ordered between themselves.
         assert titles == ["Amelie", "Blade Runner", "Zodiac"]
+
+
+# ── remove_from_watchlist ─────────────────────────────────────────────────────
+
+def test_remove_from_watchlist_deletes_entry(app, sample_user, sample_film):
+    """
+    Removing a film that's in the watchlist should delete its entry.
+    """
+    with app.app_context():
+        add_to_watchlist(user_id=sample_user, film_id=sample_film)
+
+        result = remove_from_watchlist(user_id=sample_user, film_id=sample_film)
+        assert result is True
+
+        in_db = WatchlistEntry.query.filter_by(
+            user_id=sample_user, film_id=sample_film
+        ).first()
+        assert in_db is None
+
+
+def test_remove_from_watchlist_nonexistent_entry_raises(app, sample_user, sample_film):
+    """
+    Removing a film that was never added to the watchlist should raise
+    NotInWatchlistError instead of silently succeeding.
+    """
+    with app.app_context():
+        with pytest.raises(NotInWatchlistError):
+            remove_from_watchlist(user_id=sample_user, film_id=sample_film)
 
