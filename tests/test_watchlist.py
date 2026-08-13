@@ -166,3 +166,24 @@ def test_remove_from_watchlist_nonexistent_entry_raises(app, sample_user, sample
         with pytest.raises(NotInWatchlistError):
             remove_from_watchlist(user_id=sample_user, film_id=sample_film)
 
+
+# ── public visibility toggle ──────────────────────────────────────────────────
+
+def test_add_to_watchlist_defaults_to_private(app, sample_user, sample_film):
+    """
+    Not passing `public` should default the entry to private (public=False),
+    per the Comment 4 design decision in pr-response.md.
+    """
+    with app.app_context():
+        entry = add_to_watchlist(user_id=sample_user, film_id=sample_film)
+        assert entry.public is False
+
+
+def test_add_to_watchlist_respects_explicit_public_true(app, sample_user, sample_film):
+    """
+    Callers should be able to explicitly opt an entry into being public.
+    """
+    with app.app_context():
+        entry = add_to_watchlist(user_id=sample_user, film_id=sample_film, public=True)
+        assert entry.public is True
+
